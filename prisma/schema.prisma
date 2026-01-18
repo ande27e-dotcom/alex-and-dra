@@ -1,0 +1,59 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  // En Prisma 7, la URL se maneja en prisma.config.ts para conexiones locales
+}
+
+model Tenant {
+  id        String   @id @default(uuid())
+  name      String
+  domain    String   @unique
+  plan      String
+  createdAt DateTime @default(now())
+
+  users User[]
+  roles Role[]
+}
+
+model User {
+  id        String   @id @default(uuid())
+  tenantId  String?
+  email     String   @unique
+  password  String
+  roleId    String
+  createdAt DateTime @default(now())
+
+  tenant Tenant? @relation(fields: [tenantId], references: [id])
+  role   Role    @relation(fields: [roleId], references: [id])
+}
+
+model Role {
+  id        String   @id @default(uuid())
+  name      String
+  tenantId  String?
+  createdAt DateTime @default(now())
+
+  // RELACIÓN ACTUALIZADA: Conecta con el campo 'roles' en el modelo Tenant
+  tenant      Tenant?          @relation(fields: [tenantId], references: [id])
+  users       User[]
+  permissions RolePermission[]
+}
+
+model Permission {
+  id    String           @id @default(uuid())
+  key   String           @unique
+  roles RolePermission[]
+}
+
+model RolePermission {
+  roleId       String
+  permissionId String
+
+  role       Role       @relation(fields: [roleId], references: [id])
+  permission Permission @relation(fields: [permissionId], references: [id])
+
+  @@id([roleId, permissionId])
+}
